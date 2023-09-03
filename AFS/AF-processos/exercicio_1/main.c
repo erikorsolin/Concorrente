@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
     // Limpar o buffer de saída antes de criar o segundo filho
     fflush(stdout);
-
+    
     // cria o segundo processo filho
     pid_t pid2 = fork(); 
     if (pid2 > 0) {
@@ -64,9 +64,8 @@ int main(int argc, char** argv) {
     }
 
     // O processo pai espera pelos filhos
-    int status;
-    waitpid(pid1, &status, 0); // Espera pelo primeiro filho
-    waitpid(pid2, &status, 0); // Espera pelo segundo filho
+    wait(NULL);
+    wait(NULL);
 
     printf("Processo pai finalizado!\n");   
     return 0;
