@@ -4,7 +4,6 @@
 #include <sys/wait.h>
 #include <stdio.h>
 
-
 //                          (principal)
 //                               |
 //              +----------------+--------------+
@@ -64,6 +63,10 @@ int main(int argc, char** argv) {
             }
         }
 
+        wait(NULL); // Espera pelos netos
+        wait(NULL); // Espera pelos netos
+        wait(NULL); // Espera pelos netos
+
         printf("Processo %d finalizado\n", getpid());
         exit(EXIT_SUCCESS);
     }
@@ -96,6 +99,10 @@ int main(int argc, char** argv) {
                 exit(EXIT_SUCCESS);
             }
         }
+
+        wait(NULL); // Espera pelos netos
+        wait(NULL); // Espera pelos netos
+        wait(NULL); // Espera pelos netos
 
         printf("Processo %d finalizado\n", getpid());
         exit(EXIT_SUCCESS);
