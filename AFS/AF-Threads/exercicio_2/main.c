@@ -21,6 +21,36 @@ double* load_vector(const char* filename, int* out_size);
 void avaliar(double* a, double* b, double* c, int size);
 
 
+void* calculo(void *arg) {
+    dados *dados1 = (dados *)arg;  // Converte o argumento arg de um ponteiro genérico (void *) para um ponteiro do tipo dados
+    int n_threads = (*dados1).n_threads; // Acessa o campo n_threads da struct dados
+    int size_a = (*dados1).size_a; // Acessa o campo size_a da struct dados
+    double *a = (*dados1).a;
+    double *b = (*dados1).b; 
+    double *c = (*dados1).c; 
+
+    int elementos_por_thread = size_a / n_threads; // Calcula a quantidade de elementos que cada thread deve processar
+    int inicio = elementos_por_thread * dados1->thread_id;  // Calcula o índice inicial do vetor que a thread deve processar
+    int fim = (dados1->thread_id == n_threads - 1) ? size_a : inicio + elementos_por_thread; // Calcula o índice final do vetor que a thread deve processar
+
+    for (int i = inicio; i < fim; i++) {
+        c[i] = a[i] + b[i];
+    }
+
+    pthread_exit(NULL);
+}
+
+
+typedef struct {
+    double size_a;
+    int n_threads;
+    double *a;
+    double *b;
+    double *c;
+    int thread_id;
+} dados;
+
+
 int main(int argc, char* argv[]) {
     // Gera um resultado diferente a cada execução do programa
     // Se **para fins de teste** quiser gerar sempre o mesmo valor
@@ -65,12 +95,43 @@ int main(int argc, char* argv[]) {
     }
     //Cria vetor do resultado 
     double* c = malloc(a_size*sizeof(double));
+    
+    // Cria vetor de dados para passar para as threads
+    dados dados1;
+    dados1.size_a = a_size;
+    dados1.n_threads = n_threads;
+    dados1.a = a;
+    dados1.b = b;
+    dados1.c = c;
+
+
 
     // Calcula com uma thread só. Programador original só deixou a leitura 
     // do argumento e fugiu pro caribe. É essa computação que você precisa 
     // paralelizar
-    for (int i = 0; i < a_size; ++i) 
-        c[i] = a[i] + b[i];
+    pthread_t threads[n_threads];
+
+
+// criando threads
+    if (n_threads > a_size){
+        for (int i = 0; i < a_size; ++i){
+        // caso n_threads seja maior que o tamanho de a, a qtd de threads criadas será size a
+        pthread_create(&threads[i], NULL, calculo,  (void *)&dados1);
+
+        }
+
+    } else {
+        for (int i = 0; i < n_threads; ++i){
+        pthread_create(&threads[i], NULL, calculo, (void *)&dados1);
+
+        }
+
+    }
+
+  
+    // Espera todas as threads terminarem
+    for (int i = 0; i < n_threads; ++i)
+        pthread_join(threads[i], NULL);
 
     //    +---------------------------------+
     // ** | IMPORTANTE: avalia o resultado! | **
