@@ -28,6 +28,8 @@ typedef struct {
     double resultado;
 } info;
 
+
+
 void* thread(void* arg) {
     info *info_ = (info *)arg;
     for(int i = info_->indice_inicial; i <= info_->indice_final; i++) {
@@ -90,6 +92,7 @@ int main(int argc, char* argv[]) {
     int qtd_calculos = (a_size+(n_threads-1)) / n_threads;  // Calcula o número de cálculos que cada thread deve realizar arredondando pra cima
     int indice_inicial = 0;
     int indice_final = -1;
+   
 
     for (int i = 0; i < n_threads; i++) {
         indice_inicial = indice_final + 1;
@@ -97,6 +100,7 @@ int main(int argc, char* argv[]) {
         infos[i].a = a;
         infos[i].b = b;
         infos[i].indice_inicial = indice_inicial;
+        infos[i].resultado = 0;
         if (indice_final > a_size - 1) {            // Põe limite ao elemento final de forma a não passar do índice final
             infos[i].indice_final = a_size - 1;     //
         } else {                                    //
