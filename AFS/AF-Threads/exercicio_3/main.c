@@ -21,27 +21,22 @@ double* load_vector(const char* filename, int* out_size);
 void avaliar(double* a, double* b, int size, double prod_escalar);
 
 typedef struct {
-    pthread_mutex_t *mutex;
     double* a;
     double* b;
     int indice_inicial;
     int indice_final;
-    double *resultado;
+    double resultado;
 } info;
 
 void* thread(void* arg) {
-    info info_ = *(info *)arg;
-    for(int i = info_.indice_inicial; i <= info_.indice_final; i++) {
-        pthread_mutex_lock(info_.mutex);
-        *info_.resultado += info_.a[i] * info_.b[i];
-        pthread_mutex_unlock(info_.mutex);
+    info *info_ = (info *)arg;
+    for(int i = info_->indice_inicial; i <= info_->indice_final; i++) {
+        info_->resultado += info_->a[i] * info_->b[i];
     }
     return 0;
 }
 
 int main(int argc, char* argv[]) {
-    pthread_mutex_t mutex;
-    pthread_mutex_init(&mutex, NULL);
     srand(time(NULL));
 
     //Temos argumentos suficientes?
@@ -99,11 +94,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < n_threads; i++) {
         indice_inicial = indice_final + 1;
         indice_final = indice_inicial + qtd_calculos - 1;
-        infos[i].resultado = &result;
         infos[i].a = a;
         infos[i].b = b;
         infos[i].indice_inicial = indice_inicial;
-        infos[i].mutex = &mutex;
         if (indice_final > a_size - 1) {            // Põe limite ao elemento final de forma a não passar do índice final
             infos[i].indice_final = a_size - 1;     //
         } else {                                    //
@@ -116,8 +109,10 @@ int main(int argc, char* argv[]) {
         pthread_create(&threads[i], NULL, thread, (void *)&infos[i]);
     }
 
-    for (int i = 0; i < n_threads; ++i)
+    for (int i = 0; i < n_threads; ++i){
         pthread_join(threads[i], NULL);
+        result += infos[i].resultado;
+        }
 
     //    +---------------------------------+
     // ** | IMPORTANTE: avalia o resultado! | **
@@ -127,7 +122,6 @@ int main(int argc, char* argv[]) {
     //Libera memória
     free(a);
     free(b);
-    
-    pthread_mutex_destroy(&mutex);
+
     return 0;
 }
