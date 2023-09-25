@@ -3,37 +3,28 @@
 #include <stdlib.h>
 #include <assert.h>
 
-pthread_mutex_t gMtx;
-
 // Função imprime resultados na correção do exercício -- definida em helper.c
 void imprimir_resultados(int n, int** results);
 
 // Função escrita por um engenheiro
-void compute(int arg) {
+void compute(int arg, int *gValue) {
     if (arg < 2) {
-        pthread_mutex_lock(&gMtx);
-        gValue += arg;
-        pthread_mutex_unlock(&gMtx);
+        *gValue += arg;
     } else {
-        compute(arg - 1);
-        compute(arg - 2);
+        compute(arg - 1, gValue);
+        compute(arg - 2, gValue);
     }
 }
-
 
 // Função wrapper que pode ser usada com pthread_create() para criar uma 
 // thread que retorna o resultado de compute(arg
 void* compute_thread(void* arg) {
     int gValue = 0;
     int* ret = malloc(sizeof(int));
-    pthread_mutex_lock(&gMtx);
-    gValue = 0;
     compute(*((int*)arg), &gValue);
     *ret = gValue;
-    pthread_mutex_unlock(&gMtx);
     return ret;
 }
-
 
 int main(int argc, char** argv) {
     // Temos n_threads?
@@ -48,9 +39,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    //Inicializa o mutex
-    pthread_mutex_init(&gMtx, NULL);
-
     int args[n_threads]; // Vetor de argumentos
     int* results[n_threads]; // Vetor de resultados
     pthread_t threads[n_threads];
@@ -62,9 +50,6 @@ int main(int argc, char** argv) {
     // Faz join em todas as threads e salva resultados
     for (int i = 0; i < n_threads; ++i)
         pthread_join(threads[i], (void**)&results[i]);
-
-    // Não usaremos mais o mutex
-    pthread_mutex_destroy(&gMtx);
 
     // Imprime resultados na tela
     // Importante: deve ser chamada para que a correção funcione
