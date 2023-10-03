@@ -6,23 +6,24 @@
 
 FILE* out;
 
+sem_t semA, semB;
+
 void *thread_a(void *args) {
     for (int i = 0; i < *(int*)args; ++i) {
-	//      +---> arquivo (FILE*) destino
-	//      |    +---> string a ser impressa
-	//      v    v
+        sem_wait(&semA);
         fprintf(out, "A");
-        // Importante para que vocês vejam o progresso do programa
-        // mesmo que o programa trave em um sem_wait().
         fflush(stdout);
+        sem_post(&semB);
     }
     return NULL;
 }
 
 void *thread_b(void *args) {
     for (int i = 0; i < *(int*)args; ++i) {
+        sem_wait(&semB);
         fprintf(out, "B");
         fflush(stdout);
+        sem_post(&semA);
     }
     return NULL;
 }
@@ -35,6 +36,10 @@ int main(int argc, char** argv) {
     int iters = atoi(argv[1]);
     srand(time(NULL));
     out = fopen("result.txt", "w");
+
+    // Inicializa semáforos
+    sem_init(&semA, 0, 1);
+    sem_init(&semB, 0, 1);
 
     pthread_t ta, tb;
 
@@ -49,6 +54,10 @@ int main(int argc, char** argv) {
     //Imprime quebra de linha e fecha arquivo
     fprintf(out, "\n");
     fclose(out);
+
+    // Destroi semáforos
+    sem_destroy(&semA);
+    sem_destroy(&semB);
   
     return 0;
 }
