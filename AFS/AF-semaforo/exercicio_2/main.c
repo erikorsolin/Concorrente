@@ -3,6 +3,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 /* ---------- Definições Globais. ---------- */
 #define TEMPO_BASE 1000000
@@ -23,6 +24,8 @@ typedef struct {
 char cabeceiras[2][11] = { { "CONTINENTE" }, { "ILHA" } };
 int total_veiculos;
 int veiculos_turno;
+int veiculos_na_ponte;
+sem_t semaforo_continente, semaforo_ilha, mutex;
 
 // ToDo: Adicione aque quaisquer outras variávels globais necessárias.
 /* ---------------------------------------- */
@@ -31,7 +34,9 @@ int veiculos_turno;
 /* Inicializa a ponte. */
 void ponte_inicializar() {
 	
-	// ToDo: IMPLEMENTAR!
+	sem_init(&semaforo_continente, 0 , veiculos_turno);
+	sem_init(&semaforo_ilha, 0 , 0);
+	sem_init(&mutex, 0 , 1);
 
 	/* Imprime direção inicial da travessia. NÃO REMOVER! */
 	printf("\n[PONTE] *** Novo sentido da travessia: CONTINENTE -> ILHA. ***\n\n");
@@ -41,23 +46,46 @@ void ponte_inicializar() {
 /* Função executada pelo veículo para ENTRAR em uma cabeceira da ponte. */
 void ponte_entrar(veiculo_t *v) {
 	
-	// ToDo: IMPLEMENTAR!
+	if (!(strcmp(cabeceiras[v->cabeceira], "CONTINENTE"))) {
+		sem_wait(&semaforo_continente);
+		sem_wait(&mutex);
+		veiculos_na_ponte++;
+		sem_post(&mutex);
+	} else {
+		sem_wait(&semaforo_ilha);
+		sem_wait(&mutex);
+		veiculos_na_ponte++;
+		sem_post(&mutex);
+	}
 }
 
 /* Função executada pelo veículo para SAIR de uma cabeceira da ponte. */
 void ponte_sair(veiculo_t *v) {
 
-	// ToDo: IMPLEMENTAR!
-	/* Você deverá imprimir a nova direção da travessia quando for necessário! */	
-	printf("\n[PONTE] *** Novo sentido da travessia: %s -> %s. ***\n\n", cabeceiras[v->cabeceira], cabeceiras[!v->cabeceira]);
-	fflush(stdout);
+	sem_wait(&mutex);
+	veiculos_na_ponte--;
+	sem_post(&mutex);
+	if (veiculos_na_ponte == 0) {
+		/* Você deverá imprimir a nova direção da travessia quando for necessário! */	
+		printf("\n[PONTE] *** Novo sentido da travessia: %s -> %s. ***\n\n", cabeceiras[v->cabeceira], cabeceiras[!v->cabeceira]);
+		fflush(stdout);
+		for (int i = 0; i < veiculos_turno; i++) {
+			if (!(strcmp(cabeceiras[v->cabeceira], "ILHA"))) {
+				sem_post(&semaforo_ilha);
+			} else {
+				sem_post(&semaforo_continente);
+			}
+			
+		}
+	}
 }
 
 /* FINALIZA a ponte. */
 void ponte_finalizar() {
 
-	// ToDo: IMPLEMENTAR!
-	
+	sem_destroy(&semaforo_continente);
+	sem_destroy(&semaforo_ilha);
+	sem_destroy(&mutex);
 	/* Imprime fim da execução! */
 	printf("[PONTE] FIM!\n\n");
 	fflush(stdout);
