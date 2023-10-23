@@ -4,23 +4,23 @@
 #include <omp.h>
 
 void init_matrix(double* m, int rows, int columns) {
-    #pragma omp parallel for schedule(guided)
-    for (int i = 0; i < rows; ++i)
-        for (int j = 0; j < columns; ++j)
+    #pragma omp parallel for collapse(2) schedule(guided)
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < columns; ++j) {
             m[i*columns+j] = i + j;
+        }
+    }
 }
-
 
 void mult_matrix(double* out, double* left, double *right, 
                  int rows_left, int cols_left, int cols_right) {
-    int i, j, k;
-    #pragma omp parallel for schedule(dynamic, 1)
-    for (i = 0; i < rows_left; ++i) {
-        for (j = 0; j < cols_right; ++j) {
-            out[i*cols_right+j] = 0;
-            #pragma omp parallel for firstprivate(i, j) schedule(guided)
-            for (k = 0; k < cols_left; ++k) 
-                out[i*cols_right+j] += left[i*cols_left+k]*right[k*cols_right+j];
+    #pragma omp parallel for collapse(2) schedule(dynamic)
+    for (int i = 0; i < rows_left; ++i) {
+        for (int j = 0; j < cols_right; ++j) {
+            double temp = 0;
+            for (int k = 0; k < cols_left; ++k) 
+                temp += left[i*cols_left+k]*right[k*cols_right+j];
+            out[i*cols_right+j] = temp;
         }
     }
 }
@@ -38,10 +38,8 @@ int main (int argc, char *argv[]) {
     init_matrix(a, sz, sz);
     init_matrix(b, sz, sz);
 
-    //          c = a * b
     mult_matrix(c,  a,  b, sz, sz, sz);
     
-    /* ~~~ imprime matriz ~~~ */
     char tmp[32];
     int max_len = 1;
     for (int i = 0; i < sz; ++i) {
@@ -51,8 +49,7 @@ int main (int argc, char *argv[]) {
         }
     }
     char fmt[16];
-    if (snprintf(fmt, 16, "%%s%%%dld", max_len) < 0) 
-        abort();
+    snprintf(fmt, 16, "%%s%%%dld", max_len);
     for (int i = 0; i < sz; ++i) {
         for (int j = 0; j < sz; ++j) 
             printf(fmt, j == 0 ? "" : " ", (unsigned long)c[i*sz+j]);
